@@ -1,159 +1,124 @@
-# 🛒 Projeto de Banco de Dados - E-commerce (Marketplace)
+# Projeto Lógico de Banco de Dados para E-commerce
 
-## 📌 Visão Geral
-Modelagem de banco de dados relacional para um sistema de e-commerce com suporte a múltiplos vendedores (marketplace), controle de estoque distribuído e gestão de pedidos.
+## Descrição do Projeto
 
-O modelo foi estruturado com foco em:
-- Integridade referencial
-- Normalização
-- Escalabilidade
+Este projeto foi desenvolvido como parte do desafio de modelagem lógica de banco de dados da DIO (Digital Innovation One), tendo como objetivo a implementação de um sistema de e-commerce utilizando MySQL 8.0.
 
----
+O modelo foi refinado a partir do cenário proposto, incorporando regras de negócio adicionais relacionadas a clientes, pagamentos, entregas e relacionamentos entre entidades.
 
-## 🧱 Modelo de Dados
+Além da modelagem lógica, foram implementadas consultas SQL para demonstrar a utilização de filtros, agregações, junções e cálculos derivados sobre os dados.
 
-### 🔑 Entidades e Chaves
+## Objetivos do Projeto
 
-| Tabela | PK | FKs |
-|------|------|------|
-| cliente | cliente_id | - |
-| endereco_cliente | id | cliente_id → cliente |
-| fornecedor | id | - |
-| vendedor | id | - |
-| produto | id | fornecedor_id → fornecedor |
-| vendedor_produto | id | vendedor_id → vendedor / produto_id → produto |
-| deposito | id | - |
-| estoque | id | produto_id → produto / deposito_id → deposito |
-| pedido | id | cliente_id → cliente / endereco_entrega_id → endereco_cliente |
-| pedido_item | id | pedido_id → pedido / produto_id → produto / vendedor_id → vendedor |
+- Construir o modelo lógico de um sistema de e-commerce.
+- Implementar relacionamentos entre entidades utilizando chaves primárias e estrangeiras.
+- Aplicar conceitos de normalização.
+- Realizar persistência de dados para testes.
+- Desenvolver consultas SQL utilizando diferentes cláusulas.
+- Demonstrar consultas analíticas sobre os dados do sistema.
 
----
+## Regras de Negócio Implementadas
 
-## 📐 Cardinalidade dos Relacionamentos
+### Cliente Pessoa Física e Pessoa Jurídica
 
-- **Cliente 1:N Endereço**
-- **Fornecedor 1:N Produto**
-- **Produto N:N Vendedor** (via vendedor_produto)
-- **Produto 1:N Estoque**
-- **Depósito 1:N Estoque**
-- **Cliente 1:N Pedido**
-- **Pedido 1:N Pedido_Item**
-- **Produto 1:N Pedido_Item**
-- **Vendedor 1:N Pedido_Item**
+Um cliente pode ser cadastrado como:
 
----
+- Pessoa Física (PF)
+- Pessoa Jurídica (PJ)
 
-## 🧩 DDL SQL (Estrutura do Banco)
+Um cliente não pode possuir simultaneamente informações de PF e PJ.
 
-```sql
-CREATE TABLE cliente (
-    cliente_id UUID PRIMARY KEY,
-    cpf VARCHAR(14),
-    cnpj VARCHAR(18),
-    nome VARCHAR(255),
-    email VARCHAR(255),
-    forma_pagamento VARCHAR(50),
-    created_at TIMESTAMP
-);
+### Formas de Pagamento
 
-CREATE TABLE endereco_cliente (
-    id UUID PRIMARY KEY,
-    cliente_id UUID,
-    cep VARCHAR(10),
-    logradouro VARCHAR(255),
-    numero VARCHAR(20),
-    complemento VARCHAR(255),
-    bairro VARCHAR(100),
-    cidade VARCHAR(100),
-    uf VARCHAR(2),
-    created_at TIMESTAMP,
-    FOREIGN KEY (cliente_id) REFERENCES cliente(cliente_id)
-);
+Um cliente pode possuir múltiplas formas de pagamento cadastradas.
 
-CREATE TABLE fornecedor (
-    id UUID PRIMARY KEY,
-    nome VARCHAR(255),
-    cnpj VARCHAR(18),
-    email VARCHAR(255),
-    telefone VARCHAR(20),
-    created_at TIMESTAMP
-);
+Exemplos:
 
-CREATE TABLE vendedor (
-    id UUID PRIMARY KEY,
-    nome VARCHAR(255),
-    cnpj VARCHAR(18),
-    email VARCHAR(255),
-    created_at TIMESTAMP
-);
+- Cartão de Crédito
+- PIX
+- Boleto Bancário
 
-CREATE TABLE produto (
-    id UUID PRIMARY KEY,
-    fornecedor_id UUID,
-    sku VARCHAR(50),
-    nome VARCHAR(255),
-    descricao TEXT,
-    preco_base INTEGER,
-    ativo BOOLEAN,
-    created_at TIMESTAMP,
-    FOREIGN KEY (fornecedor_id) REFERENCES fornecedor(id)
-);
+### Entrega
 
-CREATE TABLE vendedor_produto (
-    id UUID PRIMARY KEY,
-    vendedor_id UUID,
-    produto_id UUID,
-    preco_vendedor NUMERIC(10,2),
-    ativo BOOLEAN,
-    created_at TIMESTAMP,
-    FOREIGN KEY (vendedor_id) REFERENCES vendedor(id),
-    FOREIGN KEY (produto_id) REFERENCES produto(id)
-);
+Cada pedido possui:
 
-CREATE TABLE deposito (
-    id UUID PRIMARY KEY,
-    nome VARCHAR(255),
-    cidade VARCHAR(100),
-    uf VARCHAR(2),
-    created_at TIMESTAMP
-);
+- Status da entrega
+- Código de rastreio
 
-CREATE TABLE estoque (
-    id UUID PRIMARY KEY,
-    produto_id UUID,
-    deposito_id UUID,
-    quantidade INTEGER,
-    atualizado_em TIMESTAMP,
-    FOREIGN KEY (produto_id) REFERENCES produto(id),
-    FOREIGN KEY (deposito_id) REFERENCES deposito(id)
-);
+## Principais Entidades
 
-CREATE TABLE pedido (
-    id UUID PRIMARY KEY,
-    cliente_id UUID,
-    endereco_entrega_id UUID,
-    status_entrega VARCHAR(50),
-    cancelado_em TIMESTAMP,
-    frete_valor NUMERIC(10,2),
-    total_itens NUMERIC(10,2),
-    total_pedido NUMERIC(10,2),
-    devolucao_ate DATE,
-    cod_rastreio VARCHAR(50),
-    created_at TIMESTAMP,
-    FOREIGN KEY (cliente_id) REFERENCES cliente(cliente_id),
-    FOREIGN KEY (endereco_entrega_id) REFERENCES endereco_cliente(id)
-);
+- cliente
+- cliente_pf
+- cliente_pj
+- endereco_cliente
+- forma_pagamento
+- cliente_pagamento
+- fornecedor
+- vendedor
+- produto
+- vendedor_produto
+- deposito
+- estoque
+- pedido
+- pedido_item
+- entrega
 
-CREATE TABLE pedido_item (
-    id UUID PRIMARY KEY,
-    pedido_id UUID,
-    produto_id UUID,
-    vendedor_id UUID,
-    quantidade INTEGER,
-    preco_unitario NUMERIC(10,2),
-    subtotal NUMERIC(10,2),
-    created_at TIMESTAMP,
-    FOREIGN KEY (pedido_id) REFERENCES pedido(id),
-    FOREIGN KEY (produto_id) REFERENCES produto(id),
-    FOREIGN KEY (vendedor_id) REFERENCES vendedor(id)
-);
+## Relacionamentos
+
+- Cliente 1:N Endereço
+- Cliente N:N Forma de Pagamento
+- Fornecedor 1:N Produto
+- Produto N:N Vendedor
+- Pedido N:N Produto
+- Pedido 1:1 Entrega
+
+## Tecnologias Utilizadas
+
+- MySQL 8.0
+- MySQL Workbench
+- SQL
+
+## Consultas Implementadas
+
+O projeto contém consultas utilizando:
+
+- SELECT
+- WHERE
+- ORDER BY
+- GROUP BY
+- HAVING
+- INNER JOIN
+- LEFT JOIN
+- Funções de agregação
+- Atributos derivados
+
+## Consulta Principal
+
+A consulta principal integra:
+
+- Cliente
+- Pedido
+- Produto
+- Fornecedor
+- Vendedor
+- Entrega
+
+Permitindo visualizar todo o fluxo de venda do e-commerce.
+
+## Resultados Obtidos
+
+O projeto demonstra:
+
+- Modelagem lógica de banco de dados.
+- Aplicação de chaves primárias e estrangeiras.
+- Relacionamentos 1:1, 1:N e N:N.
+- Especialização de entidades (PF/PJ).
+- Controle de pagamentos e entregas.
+- Consultas analíticas utilizando SQL.
+- Manipulação e recuperação de dados em ambiente MySQL.
+
+## Autor
+
+Elton Silva Borges
+
+Especialista em Logística, Supply Chain, Dados e Business Intelligence.
